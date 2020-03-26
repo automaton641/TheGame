@@ -1,6 +1,7 @@
 package automaton641;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -15,17 +16,29 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.util.LinkedList;
+
 public class  Main extends Application
 {
-public ListView<String> listView;
-public TextField textField;
-public void sendCommand()
-{
-    ObservableList<String> items= listView.getItems();
-    items.add("command received: "+textField.getText());
-    listView.scrollTo(items.size());
-    textField.setText("");
-}
+    public ListView<String> listView;
+    public TextField textField;
+    public MainProcess mainProcess;
+    public void sendCommand() throws InterruptedException {
+        String message = textField.getText();
+        writeMessage("Command received: " + message);
+        mainProcess.putMessage(message);
+        textField.setText("");
+    }
+    public void writeMessage(String message) {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                ObservableList<String> items= listView.getItems();
+                items.add(message);
+                listView.scrollTo(items.size());
+            }
+        });
+    }
     public static void main(String[] args)
     {
 
@@ -53,16 +66,27 @@ public void sendCommand()
         Scene scene = new Scene(vbox, 1024, 512);
         stage.setScene(scene);
         stage.show();
+        mainProcess = new MainProcess();
+        mainProcess.main = this;
+        mainProcess.start();
     }
     private void handleButtonAction(ActionEvent event)
     {
+        try {
             sendCommand();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
     private void handleKeyPressed(KeyEvent event)
     {
         if (event.getCode().equals(KeyCode.ENTER))
         {
-            sendCommand();
+            try {
+                sendCommand();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
